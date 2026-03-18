@@ -1,5 +1,3 @@
-package src.main.java;
-
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -44,6 +42,7 @@ public class TspFrame extends JFrame {
     setLocationRelativeTo(null);
   }
 
+  // get and load file to solver
   private void onLoad() {
     JFileChooser chooser = new JFileChooser();
     chooser.setDialogTitle("Select a TSPLIB .tsp file");
@@ -61,6 +60,7 @@ public class TspFrame extends JFrame {
     }
   }
 
+  // setup and start solver
   private void onSolve() {
     if (cities == null || cities.size() < 2) {
       log.append("\nLoad a file first.\n");
@@ -73,6 +73,8 @@ public class TspFrame extends JFrame {
     log.append("Tour length (Euclidean): " + String.format("%.3f", len) + "\n");
   }
 
+  // terminate solver and all sub threads
+  // note: could be done using a pipeline
   private void onClear() {
     tour = List.of();
     mapPanel.setTour(tour);
