@@ -53,6 +53,10 @@ public class NearestNeighborSolver implements Runnable{
         }
       }
 
+      // check if cities still exists, therefore checking if STOP
+      // signal was sent
+      if(TspBlackboard.getInstance().getCities().equals(City.STOP)) return new ArrayList<>();
+
       // 4) "move there"
       // add the shortest distance to used and tour lists, then set it to current for
       // next step/iteration
@@ -96,10 +100,18 @@ public class NearestNeighborSolver implements Runnable{
 
       // solve job
       try {
-        List<Integer> res = solve(getCities(), startIndex.get());
 
-        // return result to maneger
-      }catch (Exception e){}
+        // get cities and check if they still exist, terminate otherwise
+        List<City> cities = TspBlackboard.getInstance().getCities();
+        if(cities.equals(City.STOP)) return;
+
+        // solve job
+        List<Integer> res = solve(cities, startIndex.get());
+        if(res.isEmpty()) return; // check if it returned with STOP signal, then terminate if true
+
+        // return result to manager using publisher
+        pub.sendResult(res);
+      }catch (Exception ignored){}
     }
   }
 }

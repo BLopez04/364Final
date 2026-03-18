@@ -9,6 +9,7 @@ import java.util.Optional;
 public class NearestNeighborSolverSubscriber implements MqttCallback {
     private String topic;
     private String workerId;
+    private Optional<Integer> startIndex;
     public NearestNeighborSolverSubscriber(String broker, String workerId){
         try {
             String clientId = MqttClient.generateClientId();
@@ -26,13 +27,13 @@ public class NearestNeighborSolverSubscriber implements MqttCallback {
     }
 
     public Optional<Integer> listen(Integer timeout){
-        this.foundJob = null;
+        this.startIndex = null;
 
         Integer total = 0;
         while (total <= timeout) {
             try {
-                assert foundJob != null;
-                if (!!foundJob.equals(null)) break;
+                assert startIndex != null;
+                if (!!startIndex.equals(null)) break;
 
                 Thread.sleep(10);
                 total += 10;
@@ -41,7 +42,7 @@ public class NearestNeighborSolverSubscriber implements MqttCallback {
             }
         }
 
-        return foundJob;
+        return startIndex;
     }
 
     @Override
@@ -50,7 +51,8 @@ public class NearestNeighborSolverSubscriber implements MqttCallback {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-            this.foundJob = Optional.ofNullable(mapper.readValue(payload, Job.class));
+
+            this.startIndex = Optional.ofNullable(mapper.readValue(payload, Integer.class));
             System.out.println("Job arrived for worker " + workerId);
         }catch (Exception e){
             System.out.println("invalid payload for worker" + workerId + ": " + payload);

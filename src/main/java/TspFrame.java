@@ -53,6 +53,7 @@ public class TspFrame extends JFrame {
       cities = TspParser.load(f);
       tour = List.of();
       mapPanel.setCities(cities);
+      TspBlackboard.getInstance().setCities(cities);
       log.append("\nLoaded: " + f.getAbsolutePath() + "\n");
       log.append("Cities: " + cities.size() + "\n");
     } catch (Exception ex) {
@@ -78,6 +79,8 @@ public class TspFrame extends JFrame {
   private void onClear() {
     tour = List.of();
     mapPanel.setTour(tour);
+
+    TspBlackboard.getInstance().setCities(City.STOP);
     log.append("\nTour cleared.\n");
   }
 

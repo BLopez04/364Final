@@ -1,4 +1,6 @@
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Represents a city with an ID and (x, y) coordinates.
@@ -7,6 +9,7 @@ import java.awt.*;
  * @version 2.0
  */
 public class City {
+  public static final ArrayList<City> STOP = new ArrayList<>(Arrays.asList(new City(-1, -1, -1)));
 
   private final int id;
   private final double x;
