@@ -9,7 +9,8 @@ import java.util.Optional;
 public class NearestNeighborSolverSubscriber implements MqttCallback {
     private String topic;
     private String workerId;
-    private Optional<Integer> startIndex;
+    private volatile Integer startIndex;
+
     public NearestNeighborSolverSubscriber(String broker, String workerId){
         try {
             String clientId = MqttClient.generateClientId();
@@ -26,23 +27,21 @@ public class NearestNeighborSolverSubscriber implements MqttCallback {
         } catch (Exception e) {}
     }
 
-    public Optional<Integer> listen(Integer timeout){
+    public Optional<Integer> listen(Integer timeout) {
         this.startIndex = null;
 
-        Integer total = 0;
-        while (total <= timeout) {
-            try {
-                assert startIndex != null;
-                if (!!startIndex.equals(null)) break;
-
-                Thread.sleep(10);
-                total += 10;
-            }catch (Exception e){
-
+        int waited = 0;
+        while (waited < timeout) {
+            if (startIndex != null) {
+                Optional.of(startIndex);
             }
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException ignored) {}
+            waited += 10;
         }
 
-        return startIndex;
+        return Optional.empty();
     }
 
     @Override
@@ -52,7 +51,7 @@ public class NearestNeighborSolverSubscriber implements MqttCallback {
         try {
             ObjectMapper mapper = new ObjectMapper();
 
-            this.startIndex = Optional.ofNullable(mapper.readValue(payload, Integer.class));
+            this.startIndex = mapper.readValue(payload, Integer.class);
             System.out.println("Job arrived for worker " + workerId);
         }catch (Exception e){
             System.out.println("invalid payload for worker" + workerId + ": " + payload);

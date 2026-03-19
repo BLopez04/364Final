@@ -11,7 +11,7 @@ import java.util.*;
 public class NearestNeighborSolver implements Runnable{
 
   private static final Integer TIMEOUT = 1000;
-  private NearestNeighborSolverPublisher pub;
+  NearestNeighborSolverPublisher pub;
   private NearestNeighborSolverSubscriber sub;
 
   public NearestNeighborSolver(String broker) throws MqttException {

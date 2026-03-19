@@ -3,7 +3,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
-
+import java.util.ArrayList;
 /**
  * A simple Swing GUI for loading a TSPLIB .tsp file,
  * displaying the cities, and computing a tour using the nearest neighbor heuristic.
@@ -61,18 +61,51 @@ public class TspFrame extends JFrame {
     }
   }
 
-  // setup and start solver
+  // our new solver using threads
   private void onSolve() {
     if (cities == null || cities.size() < 2) {
       log.append("\nLoad a file first.\n");
       return;
     }
-    tour = NearestNeighborSolver.solve(cities, 0);
-    double len = NearestNeighborSolver.length(cities, tour);
-    mapPanel.setTour(tour);
-    log.append("\nNearest-neighbor tour computed.\n");
-    log.append("Tour length (Euclidean): " + String.format("%.3f", len) + "\n");
+
+    log.append("\nStarting distributed TSP solve...\n");
+
+    String broker = "tcp://broker.hivemq.com:1883";
+
+    try {
+      // Start up our solver threads, reserve a processor for the manager
+      int numThreads = Runtime.getRuntime().availableProcessors() - 1;
+      if (numThreads < 1) numThreads = 1;
+
+      log.append("Starting " + numThreads + " solver threads\n");
+
+      for (int i = 0; i < numThreads; i++) {
+        NearestNeighborSolver solver = new NearestNeighborSolver(broker);
+        new Thread(solver).start();
+      }
+
+      // Start the manager and its subscribers
+      TspManager manager = new TspManager(broker);
+
+      // Wait for all results
+      log.append("Waiting for all solver results...\n");
+      manager.waitForAll();
+
+      // Get the best tour from the blackboard
+      List<Integer> bestTour = TspBlackboard.getInstance().getBestTour();
+      double bestCost = TspBlackboard.getInstance().getBestCost();
+
+      // Update UI
+      mapPanel.setTour(bestTour);
+      log.append("Best tour length: " + String.format("%.3f", bestCost) + "\n");
+      log.append("Distributed TSP solve complete.\n");
+
+    } catch (Exception e) {
+      log.append("\nERROR: " + e.getMessage() + "\n");
+      e.printStackTrace();
+    }
   }
+
 
   // terminate solver and all sub threads
   // note: could be done using a pipeline
