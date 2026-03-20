@@ -19,7 +19,7 @@ public class TspManagerResultSubscriber implements MqttCallback {
         client.setCallback(this);
         client.connect();
 
-        client.subscribe(RESULT_TOPIC, 2);
+        client.subscribe(NearestNeighborSolverPublisher.resultTopic, 2);
         System.out.println("TspManagerResultSubscriber subscribed to: " + RESULT_TOPIC);
     }
 
@@ -32,6 +32,7 @@ public class TspManagerResultSubscriber implements MqttCallback {
         try {
             Payload payload = mapper.readValue(message.getPayload(), Payload.class);
             manager.handleResult(payload.tour);
+            System.out.println("Result received");
         } catch (Exception e) {
             System.out.println("Invalid result payload: " + new String(message.getPayload()));
         }

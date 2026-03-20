@@ -64,6 +64,8 @@ public class TspBlackboard {
     public void updateBest(List<Integer> tour, double cost) {
         try {
             lock.lock();
+
+            if(tour.size() == 0) System.out.printf("cost: %d\n\n\n", cost);
             if (cost < bestCost) {
                 bestCost = cost;
                 bestTour = new ArrayList<>(tour);

@@ -10,13 +10,17 @@ public class NearestNeighborSolverPublisher {
     private final MqttClient client;
     private String workerId;
 
-    private static final String resultTopic = "jobs/result";
+    public static final String resultTopic = "jobs/result";
 
     public NearestNeighborSolverPublisher(String broker) throws MqttException {
         this.workerId = MqttClient.generateClientId();
         client = new MqttClient(broker, workerId);
         client.connect();
-        //System.out.println("outsourcer publisher connected");
+    }
+
+    public void close() throws MqttException {
+        client.disconnect();
+        client.close();
     }
 
     static class Payload {
@@ -42,7 +46,7 @@ public class NearestNeighborSolverPublisher {
             msg.setQos(2);
 
             client.publish(topic, msg);
-            System.out.println("sent request from " + workerId);
+            // System.out.println("sent request from " + workerId);
 
         } catch (Exception e) {}
     }
@@ -53,7 +57,11 @@ public class NearestNeighborSolverPublisher {
         byte[] bytes = mapper.writeValueAsBytes(payload);
 
         MqttMessage message = new MqttMessage(bytes);
+        message.setQos(2);
+        message.setRetained(true);
         client.publish(resultTopic, message);
+
+        System.out.println("sent result from " + workerId);
     }
 
     /*

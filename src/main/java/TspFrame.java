@@ -3,7 +3,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
-import java.util.ArrayList;
 /**
  * A simple Swing GUI for loading a TSPLIB .tsp file,
  * displaying the cities, and computing a tour using the nearest neighbor heuristic.
@@ -40,6 +39,10 @@ public class TspFrame extends JFrame {
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     setSize(900, 650);
     setLocationRelativeTo(null);
+
+
+    //MqttConnectOptions options = new MqttConnectOptions();
+    //options.setCleanSession(true);
   }
 
   // get and load file to solver
@@ -68,24 +71,26 @@ public class TspFrame extends JFrame {
       return;
     }
 
+    TspBlackboard.getInstance().setCities(cities);
+
     log.append("\nStarting distributed TSP solve...\n");
 
     String broker = "tcp://broker.hivemq.com:1883";
 
     try {
       // Start up our solver threads, reserve a processor for the manager
-      int numThreads = Runtime.getRuntime().availableProcessors() - 1;
+      int numThreads = (Runtime.getRuntime().availableProcessors() - Thread.activeCount());
       if (numThreads < 1) numThreads = 1;
 
       log.append("Starting " + numThreads + " solver threads\n");
+
+      // Start the manager and its subscribers
+      TspManager manager = new TspManager(broker);
 
       for (int i = 0; i < numThreads; i++) {
         NearestNeighborSolver solver = new NearestNeighborSolver(broker);
         new Thread(solver).start();
       }
-
-      // Start the manager and its subscribers
-      TspManager manager = new TspManager(broker);
 
       // Wait for all results
       log.append("Waiting for all solver results...\n");
@@ -94,6 +99,10 @@ public class TspFrame extends JFrame {
       // Get the best tour from the blackboard
       List<Integer> bestTour = TspBlackboard.getInstance().getBestTour();
       double bestCost = TspBlackboard.getInstance().getBestCost();
+
+      // set cities to STOP so sol
+      TspBlackboard.getInstance().setCities(City.STOP);
+      manager.close();
 
       // Update UI
       mapPanel.setTour(bestTour);

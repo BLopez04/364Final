@@ -37,6 +37,7 @@ public class TspManagerRequestSubscriber implements MqttCallback {
             manager.handleRequest(workerId, capacity);
 
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Invalid request payload: " + new String(message.getPayload()));
         }
     }

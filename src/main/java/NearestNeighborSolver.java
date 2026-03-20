@@ -23,7 +23,9 @@ public class NearestNeighborSolver implements Runnable{
 
     // set n as size of cities given and check if both values given are valid
     int n = cities.size();
-    if (n == 0) return List.of();
+    if (n == 0) {
+      return List.of();
+    }
     if (startIndex < 0 || startIndex >= n) startIndex = 0;
 
     // 2) create used and resulting/tour lists to correct size
@@ -55,7 +57,9 @@ public class NearestNeighborSolver implements Runnable{
 
       // check if cities still exists, therefore checking if STOP
       // signal was sent
-      if(TspBlackboard.getInstance().getCities().equals(City.STOP)) return new ArrayList<>();
+      if(TspBlackboard.getInstance().getCities().equals(City.STOP)) {
+        return new ArrayList<>();
+      }
 
       // 4) "move there"
       // add the shortest distance to used and tour lists, then set it to current for
@@ -83,6 +87,11 @@ public class NearestNeighborSolver implements Runnable{
     return total;
   }
 
+  public void close() throws MqttException {
+    pub.close();
+    sub.close();
+  }
+
   @Override
   public void run() {
     Optional<Integer> startIndex;
@@ -96,6 +105,15 @@ public class NearestNeighborSolver implements Runnable{
         // listen for assignment
         startIndex = sub.listen(TIMEOUT);
         if(startIndex.isPresent()) break;
+
+        // get cities and check if they still exist, terminate otherwise
+        List<City> cities = TspBlackboard.getInstance().getCities();
+        if(cities.equals(City.STOP)) {
+          try {
+            close();
+          } catch (MqttException ignored){}
+          return;
+        }
       }
 
       // solve job
@@ -103,11 +121,21 @@ public class NearestNeighborSolver implements Runnable{
 
         // get cities and check if they still exist, terminate otherwise
         List<City> cities = TspBlackboard.getInstance().getCities();
-        if(cities.equals(City.STOP)) return;
+        if(cities.equals(City.STOP)) {
+          try {
+            close();
+          } catch (MqttException ignored){}
+          return;
+        }
 
         // solve job
         List<Integer> res = solve(cities, startIndex.get());
-        if(res.isEmpty()) return; // check if it returned with STOP signal, then terminate if true
+        if(res.isEmpty()) {
+          try {
+            close();
+          } catch (MqttException ignored){}
+          return; // check if it returned with STOP signal, then terminate if true
+        }
 
         // return result to manager using publisher
         pub.sendResult(res);

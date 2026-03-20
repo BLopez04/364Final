@@ -29,4 +29,9 @@ public class TspManagerPublisher {
             e.printStackTrace();
         }
     }
+
+    public void close() throws MqttException {
+        client.disconnect();
+        client.close();
+    }
 }

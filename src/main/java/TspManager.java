@@ -14,14 +14,40 @@ public class TspManager {
 
     private final TspManagerPublisher pub;
 
+
     public TspManager(String broker) throws MqttException {
 
         // number of jobs = number of starting cities
         this.numCities = TspBlackboard.getInstance().getCities().size();
+
         this.doneLatch = new CountDownLatch(numCities);
+        for (int i = 0; i < numCities; i++) {
+            jobQueue.add(i);
+        }
+
+        // publisher for assigning jobs
+        this.pub = new TspManagerPublisher(broker);
+
+        // subscribers for requests + results
+        new TspManagerResultSubscriber(broker, this);
+        new TspManagerRequestSubscriber(broker, this);
+
+        System.out.println("TspManager initialized with " + numCities + " jobs.");
+    }
+
+    public TspManager(String broker, Integer queue) throws MqttException {
+
+        // number of jobs = number of starting cities
+        this.numCities = TspBlackboard.getInstance().getCities().size();
 
         // fill job queue with start indices
-        for (int i = 0; i < numCities; i++) {
+        if (queue == null) queue = Integer.MAX_VALUE;
+        if(queue > numCities){
+            queue = numCities;
+        }
+
+        this.doneLatch = new CountDownLatch(queue);
+        for (int i = 0; i < queue; i++) {
             jobQueue.add(i);
         }
 
@@ -32,16 +58,16 @@ public class TspManager {
         new TspManagerRequestSubscriber(broker, this);
         new TspManagerResultSubscriber(broker, this);
 
-        System.out.println("TspManager initialized with " + numCities + " jobs.");
+
+        System.out.println("TspManager initialized with " + queue + " jobs.");
     }
     // when a worker requests work, assign jobs up to its capacity
     public synchronized void handleRequest(String workerId, int capacity) {
         for (int i = 0; i < capacity; i++) {
             Integer job = jobQueue.poll();
-            if (job == null) {
-                return; // no more jobs to assign
+            if (job != null) {
+                pub.assignJob(workerId, job);; // no more jobs to assign
             }
-            pub.assignJob(workerId, job);
         }
     }
 
@@ -67,5 +93,9 @@ public class TspManager {
 
     public int getNumCities() {
         return numCities;
+    }
+
+    public void close() throws MqttException {
+        pub.close();
     }
 }
